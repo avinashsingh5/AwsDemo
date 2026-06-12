@@ -1,0 +1,35 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/AwsDemo
+
+            git pull origin main
+
+            docker stop demo-app || true
+            docker rm demo-app || true
+
+            docker build -t docker-cicd-demo .
+
+            docker run -d \
+              --name demo-app \
+              -p 80:3000 \
+              docker-cicd-demo
